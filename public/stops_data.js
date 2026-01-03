@@ -10,11 +10,17 @@ const RTD_STOPS = {
     "R": [
         { name: "Peoria Station", id: "34628", dir: "Southbound" },
         { name: "Lincoln Station", id: "34600", dir: "Northbound" },
+        { name: "Fitzsimons Station", id: "34587", dir: "Northbound" },
         { name: "Aurora Metro Center", id: "34614", dir: "Northbound" }
     ],
     "121": [
-        { name: "Peoria St & 17th Ave", id: "24806", dir: "Northbound" },
+        // NORTHBOUND (Added 2 stops as requested)
+        { name: "Peoria St & 17th Ave", id: "15891", dir: "Northbound" },
+        { name: "Peoria Station (Gate D)", id: "34502", dir: "Northbound" },
+
+        // SOUTHBOUND
+        { name: "Peoria St & 17th Ave", id: "15892", dir: "Southbound" }, 
         { name: "Peoria St & 37th Ave", id: "16397", dir: "Southbound" },
-        { name: "Peoria Station Gate E", id: "34222", dir: "Southbound" }
+        { name: "Peoria Station (Gate E)", id: "34222", dir: "Southbound" }
     ]
 };
