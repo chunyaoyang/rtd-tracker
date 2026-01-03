@@ -3,23 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RTD Live Map</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
+    <title>RTD Tracker</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div id="status-box">
-        <strong>Tracking:</strong> A, R, 121<br>
-        <span id="vehicle-count">Loading...</span>
+    <div id="app-container">
+        <h1>My Trips</h1>
+        <div id="tracker-container">
+            </div>
     </div>
 
-    <div id="map"></div>
+    <button id="add-btn" onclick="openModal()">+</button>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div id="modal-overlay" class="hidden">
+        <div id="modal-box">
+            <h3>Add Trip Tracker</h3>
+            
+            <label>Select Route:</label>
+            <select id="route-select" onchange="populateStops()">
+                <option value="">-- Choose Route --</option>
+                <option value="A">A Line</option>
+                <option value="R">R Line</option>
+                <option value="121">Bus 121</option>
+            </select>
+
+            <label>Select Stop:</label>
+            <select id="stop-select" disabled>
+                <option>-- Choose Stop --</option>
+            </select>
+
+            <div class="modal-buttons">
+                <button onclick="closeModal()" class="cancel">Cancel</button>
+                <button onclick="addTracker()" class="confirm">Start Tracking</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="stops_data.js"></script>
     <script src="script.js"></script>
-
 </body>
 </html>

@@ -1,155 +1,210 @@
-// public/script.js
-
 // --- CONFIGURATION ---
-const TARGET_ROUTES = ['A', 'R', '121']; 
-const MAX_HISTORY_POINTS = 40;
-
-// !!! PASTE YOUR GOOGLE SHEET CSV LINK HERE !!!
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQg1C0sxY1eudm9ykzVansI4yowTWV3-IDo6eJBEQJ8T-sf_wXXlvzhkSbwlQsQ-IdIOWSIEwA3V8o-/pub?gid=0&single=true&output=csv"; 
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQg1C0sxY1eudm9ykzVansI4yowTWV3-IDo6eJBEQJ8T-sf_wXXlvzhkSbwlQsQ-IdIOWSIEwA3V8o-/pub?gid=0&single=true&output=csv";
 
 // --- STATE ---
-const vehicleHistory = {}; 
-const markers = {};        
-const polylines = {};      
+let myTrackers = JSON.parse(localStorage.getItem('myTrackers')) || [];
+let routeStatus = {}; // Stores last seen time for each route: { "A": timestamp, "R": timestamp }
 
-// --- MAP SETUP ---
-// We initialize the map globally so other functions can reach it
-let map;
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    renderTrackerCards(); 
+    refreshAllData(); // Initial load
 
-function initMap() {
-    // 1. Initialize Map
-    map = L.map('map').setView([39.7392, -104.9903], 11);
+    // Update everything every 30 seconds
+    setInterval(refreshAllData, 30000); 
+});
 
-    // 2. Add "CartoDB Positron" (Light Monotone) Tiles
-    // This map is designed specifically for data visualization (clean, grey, minimal)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-    }).addTo(map);
+async function refreshAllData() {
+    await checkRouteActivity(); // 1. Check spreadsheet for movement
+    updateAllPredictions();     // 2. Check API for arrival times
 }
 
-// --- HISTORY LOGIC ---
-async function loadHistoryFromSheet() {
-    console.log("Downloading history from Google Sheet...");
+// ==========================================
+// 1. SPREADSHEET STATUS CHECK (The "Heartbeat")
+// ==========================================
+async function checkRouteActivity() {
     try {
         const res = await fetch(SHEET_URL);
         const text = await res.text();
-        
-        const rows = text.split('\n').slice(1); // Remove header
-        
+        const rows = text.split('\n').slice(1); // Skip header
+
+        // Reset status
+        routeStatus = {}; 
+
+        // Scan rows to find the LATEST timestamp for each route
         rows.forEach(row => {
             const cols = row.split(',');
-            if (cols.length < 6) return; 
-
-            // Columns: 0=Time, 1=Route, 2=ID, 3=Dir, 4=Lat, 5=Lng
-            const id = cols[2];
-            const lat = parseFloat(cols[4]);
-            const lng = parseFloat(cols[5]);
-
-            if (!vehicleHistory[id]) vehicleHistory[id] = [];
+            if (cols.length < 2) return;
             
-            // Sheet data is usually chronological, so we push to the end
-            vehicleHistory[id].push([lat, lng]);
+            // CSV Format: Time (0), Route (1), ID (2)...
+            const timestamp = new Date(cols[0]).getTime();
+            const routeId = cols[1];
+
+            // If this row is newer than what we have stored, update it
+            if (!routeStatus[routeId] || timestamp > routeStatus[routeId]) {
+                routeStatus[routeId] = timestamp;
+            }
         });
 
-        console.log("History loaded. Drawing trails...");
-        drawTrails();
+        // Update the UI indicators immediately after checking
+        updateStatusIndicators();
 
     } catch (err) {
-        console.error("Could not load Sheet history:", err);
+        console.error("Failed to load spreadsheet status:", err);
     }
 }
 
-function drawTrails() {
-    Object.keys(vehicleHistory).forEach(id => {
-        if (!polylines[id]) {
-            polylines[id] = L.polyline(vehicleHistory[id], {
-                color: 'blue',
-                weight: 3,
-                opacity: 0.5,
-                dashArray: '5, 5'
-            }).addTo(map);
+function updateStatusIndicators() {
+    const now = Date.now();
+
+    myTrackers.forEach(tracker => {
+        const lastSeen = routeStatus[tracker.route];
+        const statusTextEl = document.querySelector(`#card-${tracker.id} .status-text`);
+        const statusDotEl = document.querySelector(`#card-${tracker.id} .status-dot`);
+        
+        if (!statusTextEl || !statusDotEl) return;
+
+        if (lastSeen) {
+            const diffMinutes = Math.floor((now - lastSeen) / 60000);
+
+            if (diffMinutes <= 10) {
+                // Active recently (Green)
+                statusDotEl.className = "status-dot active";
+                statusTextEl.innerText = `System Active (Last log ${diffMinutes}m ago)`;
+                statusTextEl.style.color = "#2e7d32";
+            } else {
+                // No logs for > 10 mins (Red)
+                statusDotEl.className = "status-dot inactive";
+                statusTextEl.innerText = `Stalled / No Data (Last log ${diffMinutes}m ago)`;
+                statusTextEl.style.color = "#d32f2f";
+            }
         } else {
-            polylines[id].setLatLngs(vehicleHistory[id]);
+            statusTextEl.innerText = "Status Unknown";
         }
     });
 }
 
+// ==========================================
+// 2. UI & CARDS
+// ==========================================
 
-async function updateMap() {
-    try {
-        const response = await fetch('/api/vehicles');
-        const allData = await response.json();
-        const activeVehicles = allData.filter(v => TARGET_ROUTES.includes(v.routeId));
+function renderTrackerCards() {
+    const container = document.getElementById('tracker-container');
+    container.innerHTML = '';
+
+    if (myTrackers.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#999;">No trips tracked yet. Click "+" to add one.</p>';
+        return;
+    }
+
+    myTrackers.forEach(tracker => {
+        const div = document.createElement('div');
+        div.className = `tracker-card route-${tracker.route}`;
+        div.id = `card-${tracker.id}`;
         
-        const countEl = document.getElementById('vehicle-count');
-        if (countEl) countEl.innerText = `${activeVehicles.length} vehicles active`;
+        div.innerHTML = `
+            <div class="delete-btn" onclick="removeTracker(${tracker.id})">&times;</div>
+            <div class="card-header">${tracker.stopName}</div>
+            <div class="card-sub">Route ${tracker.route} &bull; ${tracker.dir}</div>
+            
+            <div class="prediction-text">
+                Loading...
+            </div>
 
-        activeVehicles.forEach(bus => {
-            const id = bus.id;
-            const lat = bus.lat;
-            const lng = bus.lng;
-            // Default to 0 if bearing is missing
-            const bearing = bus.bearing || 0; 
-
-            // 1. History Logic
-            if (!vehicleHistory[id]) vehicleHistory[id] = [];
-            vehicleHistory[id].push([lat, lng]);
-            if (vehicleHistory[id].length > MAX_HISTORY_POINTS) vehicleHistory[id].shift();
-
-            // 2. Create Icon HTML with Rotation
-            // We rotate the DIV, not the Leaflet marker, to keep performance high
-            const iconHtml = `
-                <div class="arrow-icon" style="transform: rotate(${bearing}deg);">
-                    <div class="arrow-shape">
-                        <div class="arrow-text">${bus.routeId}</div>
-                    </div>
-                </div>
-            `;
-
-            // 3. Update Marker
-            if (!markers[id]) {
-                const icon = L.divIcon({ 
-                    className: '', // Remove default class to avoid conflicts
-                    html: iconHtml, 
-                    iconSize: [40, 40], 
-                    iconAnchor: [20, 20] // Pivot point (center of rotation)
-                });
-
-                markers[id] = L.marker([lat, lng], {icon: icon}).addTo(map);
-                
-                markers[id].bindPopup(`
-                    <strong>Route ${bus.routeId}</strong><br>
-                    Bus #${id}<br>
-                    Heading: ${bearing}°
-                `);
-            } else {
-                markers[id].setLatLng([lat, lng]);
-                
-                // IMPORTANT: Update rotation when bus moves!
-                // We access the DOM element inside the marker to update rotation
-                const element = markers[id].getElement();
-                if (element) {
-                    // Update the inner HTML to reflect new bearing
-                    element.innerHTML = iconHtml;
-                }
-            }
-        });
-
-        drawTrails();
-
-    } catch (err) { console.error(err); }
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking system...</span>
+            </div>
+        `;
+        container.appendChild(div);
+    });
 }
 
-// --- STARTUP ---
-// This event listener waits for the HTML to be ready
-document.addEventListener('DOMContentLoaded', () => {
-    initMap();
-    
-    // Load history first, then start live updates
-    loadHistoryFromSheet().then(() => {
-        updateMap();
-        setInterval(updateMap, 15000);
+// ==========================================
+// 3. PREDICTION API (Next Arrival)
+// ==========================================
+
+async function updateAllPredictions() {
+    myTrackers.forEach(async (tracker) => {
+        try {
+            const res = await fetch(`/api/predictions?stopId=${tracker.stopId}`);
+            const arrivals = await res.json();
+            
+            const cardText = document.querySelector(`#card-${tracker.id} .prediction-text`);
+            if (!cardText) return;
+
+            const relevantArrivals = arrivals.filter(a => a.routeId === tracker.route);
+
+            if (relevantArrivals.length > 0) {
+                const nextBus = relevantArrivals[0];
+                const color = nextBus.minutes <= 5 ? '#d32f2f' : '#2e7d32';
+                
+                cardText.innerHTML = `
+                    <span style="color:${color}">${nextBus.minutes} min</span> 
+                    <span style="font-size:0.6em; color:#999; font-weight:normal;">(${nextBus.time})</span>
+                `;
+            } else {
+                cardText.innerHTML = `<span style="font-size:0.8em; color:#999; font-weight:normal;">No upcoming arrivals</span>`;
+            }
+        } catch (err) {
+            console.error("Error updating card", tracker.id, err);
+        }
     });
-});
+}
+
+// ==========================================
+// 4. MODAL LOGIC (Add/Remove)
+// ==========================================
+
+function openModal() { document.getElementById('modal-overlay').classList.remove('hidden'); }
+function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+function populateStops() {
+    const route = document.getElementById('route-select').value;
+    const stopSelect = document.getElementById('stop-select');
+    stopSelect.innerHTML = '<option value="">-- Choose Stop --</option>';
+    stopSelect.disabled = true;
+
+    if (route && typeof RTD_STOPS !== 'undefined' && RTD_STOPS[route]) {
+        stopSelect.disabled = false;
+        RTD_STOPS[route].forEach(stop => {
+            const opt = document.createElement('option');
+            opt.value = stop.id;
+            opt.text = `${stop.name} (${stop.dir})`;
+            stopSelect.appendChild(opt);
+        });
+    }
+}
+
+function addTracker() {
+    const route = document.getElementById('route-select').value;
+    const stopId = document.getElementById('stop-select').value;
+    
+    if (!route || !stopId) return alert("Please select both a route and a stop.");
+
+    const stopObj = RTD_STOPS[route].find(s => s.id === stopId);
+
+    myTrackers.push({
+        id: Date.now(),
+        route: route,
+        stopId: stopId,
+        stopName: stopObj.name,
+        dir: stopObj.dir
+    });
+
+    saveAndRender();
+    closeModal();
+    refreshAllData(); 
+}
+
+function removeTracker(id) {
+    if(confirm("Stop tracking this trip?")) {
+        myTrackers = myTrackers.filter(t => t.id !== id);
+        saveAndRender();
+    }
+}
+
+function saveAndRender() {
+    localStorage.setItem('myTrackers', JSON.stringify(myTrackers));
+    renderTrackerCards();
+}
