@@ -124,7 +124,17 @@ function renderTrackerCards() {
 // 3. PREDICTION API (Next Arrival)
 // ==========================================
 
+// ==========================================
+// 3. PREDICTION API (Next Arrival)
+// ==========================================
+
 async function updateAllPredictions() {
+    // Define known aliases for routes that have weird IDs (like R Line)
+    const ROUTE_ALIASES = {
+        'R': ['107R', 'R'],
+        // Add others here if discovered later
+    };
+
     myTrackers.forEach(async (tracker) => {
         try {
             const res = await fetch(`/api/predictions?stopId=${tracker.stopId}`);
@@ -133,15 +143,32 @@ async function updateAllPredictions() {
             const cardText = document.querySelector(`#card-${tracker.id} .prediction-text`);
             if (!cardText) return;
 
-            const relevantArrivals = arrivals.filter(a => a.routeId === tracker.route);
+            // Strict Filter: Only keep buses that match the ID OR the Alias List
+            const relevantArrivals = arrivals.filter(a => {
+                const busID = a.routeId.toString();
+                const targetID = tracker.route;
+
+                // 1. Exact Match? (e.g. "121" === "121")
+                if (busID === targetID) return true;
+
+                // 2. Alias Match? (e.g. Is "107R" in the list for "R"?)
+                if (ROUTE_ALIASES[targetID] && ROUTE_ALIASES[targetID].includes(busID)) {
+                    return true;
+                }
+
+                return false;
+            });
 
             if (relevantArrivals.length > 0) {
                 const nextBus = relevantArrivals[0];
                 const color = nextBus.minutes <= 5 ? '#d32f2f' : '#2e7d32';
                 
+                // We still show the Route ID in small text just in case
                 cardText.innerHTML = `
                     <span style="color:${color}">${nextBus.minutes} min</span> 
-                    <span style="font-size:0.6em; color:#999; font-weight:normal;">(${nextBus.time})</span>
+                    <span style="font-size:0.6em; color:#999; font-weight:normal;">
+                        (${nextBus.time} - Route ${nextBus.routeId})
+                    </span>
                 `;
             } else {
                 cardText.innerHTML = `<span style="font-size:0.8em; color:#999; font-weight:normal;">No upcoming arrivals</span>`;
