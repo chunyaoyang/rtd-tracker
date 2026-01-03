@@ -20,11 +20,9 @@ export default async function handler(req, res) {
       // --- FIX: Normalize the strange RTD IDs ---
       // We check for both the number (101) and the letter-combo (101A) just to be safe.
       
-      if (routeID === '101' || routeID === '101A') routeID = 'A'; 
+
       if (routeID === '107' || routeID === '107R') routeID = 'R'; 
-      if (routeID === '113' || routeID === '113W') routeID = 'W'; 
-      if (routeID === '109' || routeID === '109G') routeID = 'G'; 
-      if (routeID === '121' || routeID === '121B') routeID = 'B'; 
+
 
       // Get real bus number or fall back to ID
       const realBusNumber = entity.vehicle.vehicle?.label || entity.id;
