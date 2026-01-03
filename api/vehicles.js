@@ -14,12 +14,18 @@ export default async function handler(req, res) {
       new Uint8Array(response.data)
     );
 
-    // 3. Convert to simple JSON
+// 3. Convert to simple JSON
     const vehicles = feed.entity.map(entity => {
       if (!entity.vehicle) return null;
+
+      // FIX: Use the Label (bus number)
+      const realBusNumber = entity.vehicle.vehicle?.label || entity.id;
+
       return {
-        id: entity.id,
+        id: realBusNumber,
         routeId: entity.vehicle.trip.routeId,
+        // NEW: Add direction ID (defaults to "Unknown" if missing)
+        directionId: entity.vehicle.trip.directionId ?? "?", 
         lat: entity.vehicle.position.latitude,
         lng: entity.vehicle.position.longitude,
         timestamp: entity.vehicle.timestamp

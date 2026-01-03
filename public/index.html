@@ -5,54 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RTD Tracker</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        .vehicle { padding: 10px; border-bottom: 1px solid #ccc; }
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        
+        /* Control Bar Styles */
+        .controls { 
+            background: #f4f4f4; padding: 15px; 
+            border-radius: 8px; margin-bottom: 20px;
+            display: flex; gap: 10px; align-items: center;
+        }
+        select { padding: 8px; font-size: 16px; border-radius: 4px; }
+        
+        /* Vehicle List Styles */
+        .vehicle { 
+            padding: 15px; border-bottom: 1px solid #eee; 
+            display: flex; align-items: center; gap: 15px;
+        }
         .route-badge { 
             background: #d32f2f; color: white; 
-            padding: 2px 8px; border-radius: 4px; font-weight: bold;
+            padding: 5px 12px; border-radius: 4px; 
+            font-weight: bold; min-width: 40px; text-align: center;
         }
     </style>
 </head>
 <body>
-    <h1>Real-Time RTD Tracker</h1>
-    <div id="status">Loading data...</div>
+    <h1>RTD Live Filter</h1>
+
+    <div class="controls">
+        <label for="routeSelect"><strong>Show Route:</strong></label>
+        <select id="routeSelect" onchange="renderList()">
+            <option value="ALL">All Routes</option>
+            </select>
+        <span id="count" style="color: #666; margin-left: auto;">Loading...</span>
+    </div>
+
     <div id="container"></div>
 
     <script>
+        let allVehicles = []; // We store the data here
+
         async function getBuses() {
             try {
-                // RELATIVE PATH: No need for "https://..."
                 const response = await fetch('/api/vehicles'); 
-                const data = await response.json();
+                allVehicles = await response.json();
                 
-                const container = document.getElementById('container');
-                const status = document.getElementById('status');
+                populateDropdown(); // Update the filter options
+                renderList();       // Show the buses
                 
-                container.innerHTML = ''; // Clear old data
-                status.textContent = `Found ${data.length} vehicles active.`;
-
-                data.forEach(bus => {
-                    const div = document.createElement('div');
-                    div.className = 'vehicle';
-                    div.innerHTML = `
-                        <span class="route-badge">${bus.routeId}</span>
-                        <strong>Bus #${bus.id}</strong><br>
-                        Lat: ${bus.lat}, Lng: ${bus.lng}
-                    `;
-                    container.appendChild(div);
-                });
-
             } catch (err) {
-                document.getElementById('status').textContent = "Error loading data.";
-                console.error(err);
+                console.error("Error:", err);
             }
         }
 
-        // Run immediately
+        // 1. Find all unique routes and fill the dropdown
+        function populateDropdown() {
+            const select = document.getElementById('routeSelect');
+            const currentSelection = select.value; // Remember what user picked
+
+            // Get unique Route IDs (e.g., ["A", "101", "15L"]) and sort them
+            const routes = [...new Set(allVehicles.map(v => v.routeId))].sort();
+
+            // Clear old options but keep "All Routes"
+            select.innerHTML = '<option value="ALL">All Routes</option>';
+
+            routes.forEach(route => {
+                const option = document.createElement('option');
+                option.value = route;
+                option.textContent = `Route ${route}`;
+                select.appendChild(option);
+            });
+
+            // Restore selection if it still exists
+            select.value = currentSelection; 
+        }
+
+        // 2. Display the list based on the filter
+        function renderList() {
+            const filterValue = document.getElementById('routeSelect').value;
+            const container = document.getElementById('container');
+            
+            // Filter the data
+            const visibleVehicles = filterValue === "ALL" 
+                ? allVehicles 
+                : allVehicles.filter(v => v.routeId === filterValue);
+
+            // Update Counter
+            document.getElementById('count').textContent = `Showing ${visibleVehicles.length} vehicles`;
+
+            // Draw the HTML
+            container.innerHTML = '';
+            visibleVehicles.forEach(bus => {
+                const div = document.createElement('div');
+                div.className = 'vehicle';
+                
+                // CHANGE: displaying bus.directionId in the badge
+                div.innerHTML = `
+                    <div class="route-badge">Dir ${bus.directionId}</div>
+                    <div>
+                        <strong>Bus #${bus.id}</strong> (Route ${bus.routeId})<br>
+                        <small>Lat: ${bus.lat}, Lng: ${bus.lng}</small>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Run on load
         getBuses();
         
-        // Optional: Refresh every 30 seconds
-        setInterval(getBuses, 30000);
+        // Refresh data every 15 seconds (optional)
+        setInterval(getBuses, 15000);
     </script>
 </body>
 </html>
