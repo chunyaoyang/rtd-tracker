@@ -20,37 +20,89 @@ async function refreshAllData() {
 }
 
 // ==========================================
-// 1. SPREADSHEET STATUS CHECK (The "Heartbeat")
+// 4. ACTIVITY CHECKER (The "Ghost Trail" Reader)
 // ==========================================
+
 async function checkRouteActivity() {
+    // 1. Define Aliases (Must match your Prediction logic)
+    const ROUTE_ALIASES = {
+        'R': ['107R', 'R'],
+        // Add others if needed
+    };
+
     try {
+        // Fetch the CSV from Google Sheets
+        // (Ensure const SHEET_URL = "..." is defined at the top of your file)
         const res = await fetch(SHEET_URL);
         const text = await res.text();
-        const rows = text.split('\n').slice(1); // Skip header
-
-        // Reset status
-        routeStatus = {}; 
-
-        // Scan rows to find the LATEST timestamp for each route
-        rows.forEach(row => {
+        
+        // 2. Parse CSV: Handle Raw Timestamp & Routes
+        const rows = text.split('\n').slice(1).map(row => {
             const cols = row.split(',');
-            if (cols.length < 2) return;
+            if (cols.length < 2) return null;
             
-            // CSV Format: Time (0), Route (1), ID (2)...
-            const timestamp = new Date(cols[0]).getTime();
-            const routeId = cols[1];
+            return {
+                // Column 0 is now a raw number (e.g. 1704234000000)
+                timestamp: parseInt(cols[0]), 
+                routeId: cols[1] ? cols[1].trim() : '', 
+                vehicleId: cols[2]
+            };
+        }).filter(r => r !== null && !isNaN(r.timestamp));
 
-            // If this row is newer than what we have stored, update it
-            if (!routeStatus[routeId] || timestamp > routeStatus[routeId]) {
-                routeStatus[routeId] = timestamp;
+        // 3. Update each tracker card
+        myTrackers.forEach(tracker => {
+            const dot = document.querySelector(`#card-${tracker.id} .status-dot`);
+            const statusText = document.querySelector(`#card-${tracker.id} .status-text`);
+            
+            if (!dot || !statusText) return;
+
+            // Filter logs for this specific route (checking Aliases)
+            const relevantLogs = rows.filter(log => {
+                const targetID = tracker.route; // e.g. "R"
+                const logID = log.routeId;      // e.g. "107R"
+
+                // Strict Match
+                if (logID === targetID) return true;
+                
+                // Alias Match
+                if (ROUTE_ALIASES[targetID] && ROUTE_ALIASES[targetID].includes(logID)) {
+                    return true;
+                }
+                return false;
+            });
+
+            // 4. Determine Status based on time
+            if (relevantLogs.length > 0) {
+                // Find the newest log
+                relevantLogs.sort((a, b) => b.timestamp - a.timestamp);
+                const lastLogTime = relevantLogs[0].timestamp;
+                
+                // Calculate difference in minutes
+                // Date.now() is your computer's time vs the sheet's recorded time
+                const diffMs = Date.now() - lastLogTime;
+                const minutesAgo = Math.floor(diffMs / 60000);
+
+                // If data is fresh (less than 5 mins old) -> Active
+                if (minutesAgo <= 5) {
+                    dot.style.background = '#2e7d32'; // Green
+                    statusText.innerHTML = `Active (Log ${minutesAgo < 1 ? 'just now' : minutesAgo + 'm ago'})`;
+                    statusText.style.color = '#2e7d32';
+                } else {
+                    // Data exists, but it's old -> Stalled
+                    dot.style.background = '#d32f2f'; // Red
+                    statusText.innerHTML = `Stalled / No Signal (Last log ${minutesAgo}m ago)`;
+                    statusText.style.color = '#d32f2f';
+                }
+            } else {
+                // No logs found for this route at all
+                dot.style.background = '#bdbdbd'; // Grey
+                statusText.innerHTML = `No Recent Data`;
+                statusText.style.color = '#999';
             }
         });
 
-        // Update the UI indicators immediately after checking
-        updateStatusIndicators();
-
     } catch (err) {
-        console.error("Failed to load spreadsheet status:", err);
+        console.error("Error checking activity:", err);
     }
 }
 
