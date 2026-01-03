@@ -76,15 +76,13 @@ function drawTrails() {
     });
 }
 
-// --- LIVE UPDATE LOGIC ---
+
 async function updateMap() {
     try {
         const response = await fetch('/api/vehicles');
         const allData = await response.json();
-        
         const activeVehicles = allData.filter(v => TARGET_ROUTES.includes(v.routeId));
         
-        // Safety check: Ensure the element exists before updating text
         const countEl = document.getElementById('vehicle-count');
         if (countEl) countEl.innerText = `${activeVehicles.length} vehicles active`;
 
@@ -92,21 +90,50 @@ async function updateMap() {
             const id = bus.id;
             const lat = bus.lat;
             const lng = bus.lng;
+            // Default to 0 if bearing is missing
+            const bearing = bus.bearing || 0; 
 
-            // 1. Add to History
+            // 1. History Logic
             if (!vehicleHistory[id]) vehicleHistory[id] = [];
             vehicleHistory[id].push([lat, lng]);
-            
             if (vehicleHistory[id].length > MAX_HISTORY_POINTS) vehicleHistory[id].shift();
 
-            // 2. Update Marker
+            // 2. Create Icon HTML with Rotation
+            // We rotate the DIV, not the Leaflet marker, to keep performance high
+            const iconHtml = `
+                <div class="arrow-icon" style="transform: rotate(${bearing}deg);">
+                    <div class="arrow-shape">
+                        <div class="arrow-text">${bus.routeId}</div>
+                    </div>
+                </div>
+            `;
+
+            // 3. Update Marker
             if (!markers[id]) {
-                const iconHtml = `<div class="bus-icon">${bus.routeId}</div>`;
-                const icon = L.divIcon({ className: 'custom-div-icon', html: iconHtml, iconSize: [30, 30] });
+                const icon = L.divIcon({ 
+                    className: '', // Remove default class to avoid conflicts
+                    html: iconHtml, 
+                    iconSize: [40, 40], 
+                    iconAnchor: [20, 20] // Pivot point (center of rotation)
+                });
+
                 markers[id] = L.marker([lat, lng], {icon: icon}).addTo(map);
-                markers[id].bindPopup(`<strong>${bus.routeId}</strong> #${id}`);
+                
+                markers[id].bindPopup(`
+                    <strong>Route ${bus.routeId}</strong><br>
+                    Bus #${id}<br>
+                    Heading: ${bearing}°
+                `);
             } else {
                 markers[id].setLatLng([lat, lng]);
+                
+                // IMPORTANT: Update rotation when bus moves!
+                // We access the DOM element inside the marker to update rotation
+                const element = markers[id].getElement();
+                if (element) {
+                    // Update the inner HTML to reflect new bearing
+                    element.innerHTML = iconHtml;
+                }
             }
         });
 

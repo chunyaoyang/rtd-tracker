@@ -12,27 +12,26 @@ export default async function handler(req, res) {
       new Uint8Array(response.data)
     );
 
+// api/vehicles.js
+
     const vehicles = feed.entity.map(entity => {
       if (!entity.vehicle) return null;
 
+      // ... (Keep your Route ID normalization logic here) ...
       let routeID = entity.vehicle.trip.routeId;
-
-      // --- FIX: Normalize the strange RTD IDs ---
-      // We check for both the number (101) and the letter-combo (101A) just to be safe.
-      
 
       if (routeID === '107' || routeID === '107R') routeID = 'R'; 
 
-
-      // Get real bus number or fall back to ID
       const realBusNumber = entity.vehicle.vehicle?.label || entity.id;
 
       return {
         id: realBusNumber,
-        routeId: routeID, // This will now be "R" instead of "107R"
+        routeId: routeID,
         directionId: entity.vehicle.trip.directionId ?? "?",
         lat: entity.vehicle.position.latitude,
         lng: entity.vehicle.position.longitude,
+        // NEW: Get the compass bearing (0-360 degrees)
+        bearing: entity.vehicle.position.bearing || 0, 
         timestamp: entity.vehicle.timestamp
       };
     }).filter(v => v !== null);

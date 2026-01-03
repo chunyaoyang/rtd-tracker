@@ -1,53 +1,49 @@
 /* public/styles.css */
 
-body { 
-    margin: 0; 
-    padding: 0; 
-    font-family: sans-serif; 
-}
-
-#map { 
-    height: 100vh; 
-    width: 100vw; 
-}
+body { margin: 0; padding: 0; font-family: sans-serif; }
+#map { height: 100vh; width: 100vw; }
 
 #status-box {
-    position: absolute; 
-    top: 10px; 
-    right: 10px; 
-    z-index: 1000;
-    background: white; 
-    padding: 10px 15px; 
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    position: absolute; top: 10px; right: 10px; z-index: 1000;
+    background: white; padding: 10px 15px; border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
-/* --- MARKER STYLES --- */
+/* --- ARROW MARKER STYLES --- */
 
-/* Base Icon Style */
-.bus-icon {
-    color: white;
+/* The Container for the arrow */
+.arrow-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The actual Blue Arrow Shape */
+.arrow-shape {
+    width: 0; 
+    height: 0; 
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 24px solid #1976D2; /* BLUE FILL */
+    
+    /* Center the text on top of the arrow */
+    position: relative;
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5));
+}
+
+/* The Text (Route ID) inside the arrow */
+.arrow-text {
+    position: absolute;
+    top: 6px;       /* Position text inside the triangle */
+    left: -10px;    /* Center text horizontally */
+    width: 20px;
     text-align: center;
-    line-height: 30px;
+    color: white;
     font-weight: bold;
-    font-size: 14px;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    border-radius: 8px; /* Rounded rectangle */
-}
-
-/* DIRECTION 0: Red / Up */
-.bus-icon.dir-0 {
-    background-color: #d32f2f;
-}
-
-/* DIRECTION 1: Blue / Down */
-.bus-icon.dir-1 {
-    background-color: #1976D2;
-}
-
-/* UNKNOWN DIRECTION: Grey */
-.bus-icon.dir-unknown {
-    background-color: #666;
-    border-radius: 50%; /* Circle */
+    font-size: 10px;
+    
+    /* Ensure text is readable even if arrow rotates */
+    text-shadow: 0px 0px 2px black;
 }
