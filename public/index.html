@@ -3,117 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RTD Tracker</title>
+    <title>RTD Live Map</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        #map { height: 100vh; width: 100vw; }
         
-        /* Control Bar Styles */
-        .controls { 
-            background: #f4f4f4; padding: 15px; 
-            border-radius: 8px; margin-bottom: 20px;
-            display: flex; gap: 10px; align-items: center;
+        #status-box {
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 10px 15px; border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
         }
-        select { padding: 8px; font-size: 16px; border-radius: 4px; }
         
-        /* Vehicle List Styles */
-        .vehicle { 
-            padding: 15px; border-bottom: 1px solid #eee; 
-            display: flex; align-items: center; gap: 15px;
-        }
-        .route-badge { 
-            background: #d32f2f; color: white; 
-            padding: 5px 12px; border-radius: 4px; 
-            font-weight: bold; min-width: 40px; text-align: center;
+        .bus-icon {
+            background-color: #d32f2f;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            font-size: 12px;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
     </style>
 </head>
 <body>
-    <h1>RTD Live Filter</h1>
 
-    <div class="controls">
-        <label for="routeSelect"><strong>Show Route:</strong></label>
-        <select id="routeSelect" onchange="renderList()">
-            <option value="ALL">All Routes</option>
-            </select>
-        <span id="count" style="color: #666; margin-left: auto;">Loading...</span>
+    <div id="status-box">
+        <strong>Tracking:</strong> A, R, 121<br>
+        <span id="vehicle-count">Loading...</span>
     </div>
 
-    <div id="container"></div>
+    <div id="map"></div>
 
-    <script>
-        let allVehicles = []; // We store the data here
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        async function getBuses() {
-            try {
-                const response = await fetch('/api/vehicles'); 
-                allVehicles = await response.json();
-                
-                populateDropdown(); // Update the filter options
-                renderList();       // Show the buses
-                
-            } catch (err) {
-                console.error("Error:", err);
-            }
-        }
+    <script src="script.js"></script>
 
-        // 1. Find all unique routes and fill the dropdown
-        function populateDropdown() {
-            const select = document.getElementById('routeSelect');
-            const currentSelection = select.value; // Remember what user picked
-
-            // Get unique Route IDs (e.g., ["A", "101", "15L"]) and sort them
-            const routes = [...new Set(allVehicles.map(v => v.routeId))].sort();
-
-            // Clear old options but keep "All Routes"
-            select.innerHTML = '<option value="ALL">All Routes</option>';
-
-            routes.forEach(route => {
-                const option = document.createElement('option');
-                option.value = route;
-                option.textContent = `Route ${route}`;
-                select.appendChild(option);
-            });
-
-            // Restore selection if it still exists
-            select.value = currentSelection; 
-        }
-
-        // 2. Display the list based on the filter
-        function renderList() {
-            const filterValue = document.getElementById('routeSelect').value;
-            const container = document.getElementById('container');
-            
-            // Filter the data
-            const visibleVehicles = filterValue === "ALL" 
-                ? allVehicles 
-                : allVehicles.filter(v => v.routeId === filterValue);
-
-            // Update Counter
-            document.getElementById('count').textContent = `Showing ${visibleVehicles.length} vehicles`;
-
-            // Draw the HTML
-            container.innerHTML = '';
-            visibleVehicles.forEach(bus => {
-                const div = document.createElement('div');
-                div.className = 'vehicle';
-                
-                // CHANGE: displaying bus.directionId in the badge
-                div.innerHTML = `
-                    <div class="route-badge">Dir ${bus.directionId}</div>
-                    <div>
-                        <strong>Bus #${bus.id}</strong> (Route ${bus.routeId})<br>
-                        <small>Lat: ${bus.lat}, Lng: ${bus.lng}</small>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        // Run on load
-        getBuses();
-        
-        // Refresh data every 15 seconds (optional)
-        setInterval(getBuses, 15000);
-    </script>
 </body>
 </html>
