@@ -2,25 +2,16 @@
 
 const RTD_STOPS = {
     "A": [
-        { name: "Union Station (Track 1)", id: "34233", dir: "Eastbound" },
-        { name: "Peoria Station", id: "34220", dir: "Eastbound" },
-        { name: "Denver Airport", id: "34226", dir: "Westbound" },
-        { name: "40th & Colorado", id: "34217", dir: "Eastbound" }
+        { name: "Union Station", id: "34467", dir: "Eastbound" },
+        { name: "Peoria Station", id: "34471", dir: "Eastbound" },
+        { name: "Peoria Station", id: "34472", dir: "Westbound" }
     ],
     "R": [
-        { name: "Peoria Station", id: "34628", dir: "Southbound" },
-        { name: "Lincoln Station", id: "34600", dir: "Northbound" },
-        { name: "Fitzsimons Station", id: "34587", dir: "Northbound" },
-        { name: "Aurora Metro Center", id: "34614", dir: "Northbound" }
+        { name: "Peoria Station", id: "34744", dir: "Southbound" },
+        { name: "Fitzsimons Station", id: "34587", dir: "Northbound" }
     ],
     "121": [
         // NORTHBOUND (Added 2 stops as requested)
-        { name: "Peoria St & 17th Ave", id: "15891", dir: "Northbound" },
-        { name: "Peoria Station (Gate D)", id: "34502", dir: "Northbound" },
-
-        // SOUTHBOUND
-        { name: "Peoria St & 17th Ave", id: "15892", dir: "Southbound" }, 
-        { name: "Peoria St & 37th Ave", id: "16397", dir: "Southbound" },
-        { name: "Peoria Station (Gate E)", id: "34222", dir: "Southbound" }
+        { name: "Peoria St & 17th Ave", id: "15891", dir: "Northbound" }
     ]
 };
