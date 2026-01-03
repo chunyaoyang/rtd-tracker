@@ -17,9 +17,15 @@ const polylines = {};
 let map;
 
 function initMap() {
+    // 1. Initialize Map
     map = L.map('map').setView([39.7392, -104.9903], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+
+    // 2. Add "CartoDB Positron" (Light Monotone) Tiles
+    // This map is designed specifically for data visualization (clean, grey, minimal)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
     }).addTo(map);
 }
 

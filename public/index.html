@@ -6,29 +6,8 @@
     <title>RTD Live Map</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        #map { height: 100vh; width: 100vw; }
-        
-        #status-box {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: white; padding: 10px 15px; border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-        }
-        
-        .bus-icon {
-            background-color: #d32f2f;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 30px;
-            font-weight: bold;
-            font-size: 12px;
-            border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-    </style>
+
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -40,7 +19,6 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script src="script.js"></script>
 
 </body>

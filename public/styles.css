@@ -1,0 +1,53 @@
+/* public/styles.css */
+
+body { 
+    margin: 0; 
+    padding: 0; 
+    font-family: sans-serif; 
+}
+
+#map { 
+    height: 100vh; 
+    width: 100vw; 
+}
+
+#status-box {
+    position: absolute; 
+    top: 10px; 
+    right: 10px; 
+    z-index: 1000;
+    background: white; 
+    padding: 10px 15px; 
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+/* --- MARKER STYLES --- */
+
+/* Base Icon Style */
+.bus-icon {
+    color: white;
+    text-align: center;
+    line-height: 30px;
+    font-weight: bold;
+    font-size: 14px;
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    border-radius: 8px; /* Rounded rectangle */
+}
+
+/* DIRECTION 0: Red / Up */
+.bus-icon.dir-0 {
+    background-color: #d32f2f;
+}
+
+/* DIRECTION 1: Blue / Down */
+.bus-icon.dir-1 {
+    background-color: #1976D2;
+}
+
+/* UNKNOWN DIRECTION: Grey */
+.bus-icon.dir-unknown {
+    background-color: #666;
+    border-radius: 50%; /* Circle */
+}
