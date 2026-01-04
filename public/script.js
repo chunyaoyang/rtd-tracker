@@ -157,7 +157,8 @@ function renderTrackerCards() {
         div.innerHTML = `
             <div class="delete-btn" onclick="removeTracker(${tracker.id})">&times;</div>
             <div class="card-header">${tracker.stopName}</div>
-            <div class="card-sub">Route ${tracker.route} &bull; ${tracker.dir}</div>
+            
+            <div class="card-sub">Route ${tracker.route} &bull; ${tracker.direction}</div>
             
             <div class="prediction-text">
                 Loading...
