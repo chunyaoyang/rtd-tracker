@@ -176,10 +176,6 @@ function renderTrackerCards() {
 // 3. PREDICTION API (Next Arrival)
 // ==========================================
 
-// ==========================================
-// 3. PREDICTION API (Next Arrival)
-// ==========================================
-
 async function updateAllPredictions() {
     // Define known aliases for routes that have weird IDs (like R Line)
     const ROUTE_ALIASES = {
@@ -215,12 +211,9 @@ async function updateAllPredictions() {
                 const nextBus = relevantArrivals[0];
                 const color = nextBus.minutes <= 5 ? '#d32f2f' : '#2e7d32';
                 
-                // We still show the Route ID in small text just in case
+                // CHANGE: Only showing the minutes, removing the (Time - Route) text
                 cardText.innerHTML = `
                     <span style="color:${color}">${nextBus.minutes} min</span> 
-                    <span style="font-size:0.6em; color:#999; font-weight:normal;">
-                        (${nextBus.time} - Route ${nextBus.routeId})
-                    </span>
                 `;
             } else {
                 cardText.innerHTML = `<span style="font-size:0.8em; color:#999; font-weight:normal;">No upcoming arrivals</span>`;
@@ -256,24 +249,31 @@ function populateStops() {
 }
 
 function addTracker() {
-    const route = document.getElementById('route-select').value;
-    const stopId = document.getElementById('stop-select').value;
-    
-    if (!route || !stopId) return alert("Please select both a route and a stop.");
+    const routeSelect = document.getElementById('route-select');
+    const stopSelect = document.getElementById('stop-select');
+    const dirSelect = document.getElementById('direction-select'); // <--- NEW
 
-    const stopObj = RTD_STOPS[route].find(s => s.id === stopId);
+    const route = routeSelect.value;
+    const stopId = stopSelect.value;
+    const direction = dirSelect.value; // <--- NEW
 
-    myTrackers.push({
+    if (!route || !stopId) {
+        alert("Please select a Route and a Stop.");
+        return;
+    }
+
+    const newTracker = {
         id: Date.now(),
         route: route,
         stopId: stopId,
-        stopName: stopObj.name,
-        dir: stopObj.dir
-    });
+        direction: direction // <--- NEW: Save it to the object
+    };
 
-    saveAndRender();
+    myTrackers.push(newTracker);
+    localStorage.setItem('myTrackers', JSON.stringify(myTrackers));
+    
     closeModal();
-    refreshAllData(); 
+    renderTrackers();
 }
 
 function removeTracker(id) {

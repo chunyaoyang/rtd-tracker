@@ -8,10 +8,13 @@ const RTD_STOPS = {
     ],
     "R": [
         { name: "Peoria Station", id: "34744", dir: "Southbound" },
-        { name: "Fitzsimons Station", id: "34587", dir: "Northbound" }
+        { name: "Fitzsimons Station", id: "34587", dir: "Northbound" },
     ],
     "121": [
         // NORTHBOUND (Added 2 stops as requested)
-        { name: "Peoria St & 17th Ave", id: "15891", dir: "Northbound" }
+        { name: "Peoria St & 17th Ave", id: "15891", dir: "Northbound" },
+
+        // SOUTHBOUND
+        { name: "Peoria Station (Gate F)", id: "34499", dir: "Southbound" }
     ]
 };

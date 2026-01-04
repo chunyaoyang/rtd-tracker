@@ -28,10 +28,22 @@
                 <option value="121">Bus 121</option>
             </select>
 
+            <label>Direction (Label):</label>
+            <select id="direction-select" style="width: 100%; margin-bottom: 10px; padding: 8px;">
+                <option value="">-- Optional --</option>
+                <option value="North">Northbound</option>
+                <option value="South">Southbound</option>
+                <option value="East">Eastbound</option>
+                <option value="West">Westbound</option>
+                <option value="Inbound">Inbound</option>
+                <option value="Outbound">Outbound</option>
+            </select>
+
             <label>Select Stop:</label>
             <select id="stop-select" disabled>
                 <option>-- Choose Stop --</option>
             </select>
+
 
             <div class="modal-buttons">
                 <button onclick="closeModal()" class="cancel">Cancel</button>
