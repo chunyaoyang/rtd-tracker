@@ -3,6 +3,7 @@
 const RTD_STOPS = {
     "A": [
         { name: "Union Station", id: "34467", dir: "Eastbound" },
+        { name: "38th / Blake Station", id: "34465", dir: "Eastbound" },
         { name: "Peoria Station", id: "34471", dir: "Eastbound" },
         { name: "Peoria Station", id: "34472", dir: "Westbound" }
     ],

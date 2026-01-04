@@ -155,7 +155,10 @@ function renderTrackerCards() {
         div.id = `card-${tracker.id}`;
         
         div.innerHTML = `
-            <div class="delete-btn" onclick="removeTracker(${tracker.id})">&times;</div>
+            <button class="delete-btn" onclick="removeTracker(${tracker.id})" style="background:none; border:none; padding:0; cursor:pointer;">
+                &times;
+            </button>
+
             <div class="card-header">${tracker.stopName}</div>
             
             <div class="card-sub">Route ${tracker.route} &bull; ${tracker.direction}</div>
@@ -252,40 +255,38 @@ function populateStops() {
 function addTracker() {
     const routeSelect = document.getElementById('route-select');
     const stopSelect = document.getElementById('stop-select');
-    const dirSelect = document.getElementById('direction-select');
+    // We don't need direction-select anymore!
 
     const route = routeSelect.value;
     const stopId = stopSelect.value;
-    const direction = dirSelect.value;
 
     if (!route || !stopId) {
         alert("Please select a Route and a Stop.");
         return;
     }
 
-    // --- FIX: Look up the Stop Name ---
+    // --- 1. Look up BOTH Name and Direction from your data ---
     let stopName = "Unknown Stop";
+    let stopDir = "Unknown Direction"; // Default
+
     if (typeof RTD_STOPS !== 'undefined' && RTD_STOPS[route]) {
-        // Find the stop object that matches the selected ID
         const foundStop = RTD_STOPS[route].find(s => s.id === stopId);
         if (foundStop) {
-            stopName = foundStop.name; // e.g. "Peoria St & 17th Ave"
+            stopName = foundStop.name; 
+            stopDir = foundStop.dir;   // Grab 'dir' from stops_data.js
         }
     }
-    // ----------------------------------
 
     const newTracker = {
         id: Date.now(),
         route: route,
         stopId: stopId,
-        stopName: stopName, // <--- Saving the name here!
-        direction: direction 
+        stopName: stopName,
+        direction: stopDir // <--- Save it consistently as 'direction'
     };
 
     myTrackers.push(newTracker);
     
-    // Save and Refresh
-    // Note: Ensure your render function names match (renderTrackerCards vs renderTrackers)
     localStorage.setItem('myTrackers', JSON.stringify(myTrackers));
     closeModal();
     renderTrackerCards(); 
