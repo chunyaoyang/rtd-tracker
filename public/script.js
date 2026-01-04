@@ -251,29 +251,43 @@ function populateStops() {
 function addTracker() {
     const routeSelect = document.getElementById('route-select');
     const stopSelect = document.getElementById('stop-select');
-    const dirSelect = document.getElementById('direction-select'); // <--- NEW
+    const dirSelect = document.getElementById('direction-select');
 
     const route = routeSelect.value;
     const stopId = stopSelect.value;
-    const direction = dirSelect.value; // <--- NEW
+    const direction = dirSelect.value;
 
     if (!route || !stopId) {
         alert("Please select a Route and a Stop.");
         return;
     }
 
+    // --- FIX: Look up the Stop Name ---
+    let stopName = "Unknown Stop";
+    if (typeof RTD_STOPS !== 'undefined' && RTD_STOPS[route]) {
+        // Find the stop object that matches the selected ID
+        const foundStop = RTD_STOPS[route].find(s => s.id === stopId);
+        if (foundStop) {
+            stopName = foundStop.name; // e.g. "Peoria St & 17th Ave"
+        }
+    }
+    // ----------------------------------
+
     const newTracker = {
         id: Date.now(),
         route: route,
         stopId: stopId,
-        direction: direction // <--- NEW: Save it to the object
+        stopName: stopName, // <--- Saving the name here!
+        direction: direction 
     };
 
     myTrackers.push(newTracker);
-    localStorage.setItem('myTrackers', JSON.stringify(myTrackers));
     
+    // Save and Refresh
+    // Note: Ensure your render function names match (renderTrackerCards vs renderTrackers)
+    localStorage.setItem('myTrackers', JSON.stringify(myTrackers));
     closeModal();
-    renderTrackers();
+    renderTrackerCards(); 
 }
 
 function removeTracker(id) {
