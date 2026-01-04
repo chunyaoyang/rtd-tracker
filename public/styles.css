@@ -77,21 +77,93 @@ h1 {
 
 /* MODAL */
 .hidden { display: none !important; }
+
 #modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 3000;
-    display: flex; justify-content: center; align-items: center;
+    position: fixed; 
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); /* Darker overlay for better contrast */
+    z-index: 3000;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    backdrop-filter: blur(2px); /* Blur effect behind the modal */
 }
-#modal-box {
-    background: white; padding: 25px; border-radius: 12px;
-    width: 90%; max-width: 350px;
-    display: flex; flex-direction: column; gap: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+
+/* Changed from #modal-box to .modal to match your HTML */
+.modal {
+    background: white; 
+    padding: 25px; 
+    border-radius: 16px; /* Softer corners */
+    width: 85%; 
+    max-width: 320px; /* Keeps it phone-sized */
+    display: flex; 
+    flex-direction: column; /* Forces vertical stacking */
+    gap: 12px; /* Space between inputs */
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4); /* Strong shadow to lift it off screen */
+    animation: slideUp 0.3s ease-out;
 }
-select { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 6px; }
-.modal-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
-button.confirm { background: #1976D2; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-button.cancel { background: #f0f0f0; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; color: #333; }
+
+/* Modal Title */
+.modal h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    text-align: center;
+}
+
+/* Labels */
+.modal label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: -5px; /* Pull input closer to label */
+}
+
+/* Inputs */
+.modal select { 
+    padding: 12px; 
+    font-size: 16px; /* Prevents zooming on iPhone */
+    border: 1px solid #ccc; 
+    border-radius: 8px; 
+    background-color: #fafafa;
+    width: 100%; /* Forces full width */
+    box-sizing: border-box; /* Ensures padding doesn't break width */
+}
+
+/* Button Container */
+.modal-buttons { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-top: 15px; 
+    gap: 10px;
+}
+
+/* Modal Buttons */
+.modal button { 
+    flex: 1; /* Makes buttons equal width */
+    padding: 12px; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* Add Button (Left) */
+.modal button:first-child { 
+    background-color: #1976D2; 
+    color: white; 
+}
+
+/* Cancel Button (Right) */
+.modal button.close-btn { 
+    background-color: #f0f0f0; 
+    color: #333; 
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
 
 
 /* Status Indicator Styles */
