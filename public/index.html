@@ -17,35 +17,30 @@
     <button id="add-btn" onclick="openModal()">+</button>
 
     <div id="modal-overlay" class="hidden">
-        <div id="modal-box">
-            <h3>Add Trip Tracker</h3>
+        <div class="modal">
+            <h3>Add New Trip</h3>
             
-        <label>Select Route:</label>
-            <select id="route-select" onchange="populateStops()">
-                <option value="">-- Choose Route --</option>
+            <label>Route:</label>
+            <select id="route-select" onchange="populateDirections()">
+                <option value="">-- Select Route --</option>
                 <option value="A">A Line</option>
                 <option value="R">R Line</option>
                 <option value="121">Bus 121</option>
             </select>
 
-            <label>Select Direction:</label>
-            <select id="direction-select" style="width: 100%; margin-bottom: 10px; padding: 8px;">
-                <option value="Northbound">Northbound</option>
-                <option value="Southbound">Southbound</option>
-                <option value="Eastbound">Eastbound</option>
-                <option value="Westbound">Westbound</option>
-                <option value="Inbound">Inbound</option>
-                <option value="Outbound">Outbound</option>
+            <label>Direction:</label>
+            <select id="direction-select" onchange="populateStops()" disabled>
+                <option value="">-- Select Direction --</option>
             </select>
 
-            <label>Select Stop:</label>
+            <label>Stop:</label>
             <select id="stop-select" disabled>
-                <option>-- Choose Stop --</option>
+                <option value="">-- Select Stop --</option>
             </select>
 
             <div class="modal-buttons">
-                <button onclick="closeModal()" class="cancel">Cancel</button>
-                <button onclick="addTracker()" class="confirm">Start Tracking</button>
+                <button onclick="addTracker()">Add</button>
+                <button class="close-btn" onclick="closeModal()">Cancel</button>
             </div>
         </div>
     </div>
