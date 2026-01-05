@@ -1,3 +1,21 @@
+// --- HELPER: Normalize Route IDs ---
+// This turns "107R" -> "R", "101C" -> "C", etc.
+// so we can compare them easily.
+function getStandardRouteID(rawId) {
+    if (!rawId) return "";
+    const id = rawId.toString().toUpperCase().trim();
+    
+    // Define your mappings here
+    const MAPPINGS = {
+        "107R": "R",
+        // You can add others if needed (e.g. "101C": "C")
+    };
+
+    // Return the mapped ID, or the original if no map exists
+    return MAPPINGS[id] || id;
+}
+
+
 // ==========================================
 // RTD TRACKER LOGIC
 // ==========================================
@@ -27,11 +45,6 @@ async function refreshAllData() {
 // ==========================================
 
 async function checkRouteActivity() {
-    // Define Aliases
-    const ROUTE_ALIASES = {
-        'R': ['107R', 'R'],
-    };
-
     try {
         const res = await fetch(SHEET_URL);
         const text = await res.text();
@@ -40,7 +53,6 @@ async function checkRouteActivity() {
         const rows = text.split('\n').slice(1).map(row => {
             const cols = row.split(',');
             if (cols.length < 2) return null;
-            
             return {
                 timestamp: parseInt(cols[0]), 
                 routeId: cols[1] ? cols[1].trim() : '', 
@@ -48,28 +60,24 @@ async function checkRouteActivity() {
             };
         }).filter(r => r !== null && !isNaN(r.timestamp));
 
-        // Update each tracker card
+        // Update Trackers
         myTrackers.forEach(tracker => {
             const dot = document.querySelector(`#card-${tracker.id} .status-dot`);
             const statusText = document.querySelector(`#card-${tracker.id} .status-text`);
             
             if (!dot || !statusText) return;
 
+            // --- THE FIX: USE NORMALIZED IDs ---
             const relevantLogs = rows.filter(log => {
-                const targetID = tracker.route;
-                const logID = log.routeId;
-
-                if (logID === targetID) return true;
-                if (ROUTE_ALIASES[targetID] && ROUTE_ALIASES[targetID].includes(logID)) {
-                    return true;
-                }
-                return false;
+                // Convert both the log ID and tracker ID to the "Standard" version
+                // e.g. Log "107R" becomes "R", Tracker "R" becomes "R" -> MATCH!
+                return getStandardRouteID(log.routeId) === getStandardRouteID(tracker.route);
             });
+            // -----------------------------------
 
             if (relevantLogs.length > 0) {
                 relevantLogs.sort((a, b) => b.timestamp - a.timestamp);
                 const lastLogTime = relevantLogs[0].timestamp;
-                
                 const diffMs = Date.now() - lastLogTime;
                 const minutesAgo = Math.floor(diffMs / 60000);
 
@@ -143,10 +151,6 @@ function renderTrackerCards() {
 // ==========================================
 
 async function updateAllPredictions() {
-    const ROUTE_ALIASES = {
-        'R': ['107R', 'R']
-    };
-
     myTrackers.forEach(async (tracker) => {
         try {
             const res = await fetch(`/api/predictions?stopId=${tracker.stopId}`);
@@ -155,16 +159,14 @@ async function updateAllPredictions() {
             const cardText = document.querySelector(`#card-${tracker.id} .prediction-text`);
             if (!cardText) return;
 
+            // --- THE FIX: USE NORMALIZED IDs ---
             const relevantArrivals = arrivals.filter(a => {
-                const busID = a.routeId.toString();
-                const targetID = tracker.route;
-
-                if (busID === targetID) return true;
-                if (ROUTE_ALIASES[targetID] && ROUTE_ALIASES[targetID].includes(busID)) {
-                    return true;
-                }
-                return false;
+                // Convert both API bus ID and Tracker ID to standard format
+                // API sends "107R" -> becomes "R"
+                // Tracker has "R" -> becomes "R"
+                return getStandardRouteID(a.routeId) === getStandardRouteID(tracker.route);
             });
+            // -----------------------------------
 
             if (relevantArrivals.length > 0) {
                 const nextBus = relevantArrivals[0];
