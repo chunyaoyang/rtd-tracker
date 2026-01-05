@@ -32,7 +32,7 @@ const RTD_STOPS = {
         { name: "Denver Airport Station", id: "34475", dir: "Eastbound" } 
     ],
     "R": [
-        { name: "Fitzsimons Station", id: "34683", dir: "Northbound" },
+        { name: "Fitzsimons Station", id: "34587", dir: "Northbound" },
         { name: "Peoria Station", id: "34744", dir: "Southbound" },
     ],
     "121": [
