@@ -3,6 +3,7 @@
 A fast, simple dashboard for Denver's RTD rail and bus system.
 
 🔗 Use the App: https://rtd-tracker.vercel.app/
+
 💡 Why use this?
 
 If you commute in Denver, you know the struggle: Google Maps isn't always accurate, and the official RTD website takes too many clicks to find your train.
