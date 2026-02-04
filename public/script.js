@@ -1,27 +1,6 @@
-// --- HELPER: Normalize Route IDs ---
-// This turns "107R" -> "R", "101C" -> "C", etc.
-// so we can compare them easily.
-function getStandardRouteID(rawId) {
-    if (!rawId) return "";
-    const id = rawId.toString().toUpperCase().trim();
-    
-    // Define your mappings here
-    const MAPPINGS = {
-        "107R": "R",
-        // You can add others if needed (e.g. "101C": "C")
-    };
-
-    // Return the mapped ID, or the original if no map exists
-    return MAPPINGS[id] || id;
-}
-
-
 // ==========================================
-// RTD TRACKER LOGIC
+// RTD TRACKER LOGIC (Clean Version)
 // ==========================================
-
-// --- CONFIGURATION ---
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQg1C0sxY1eudm9ykzVansI4yowTWV3-IDo6eJBEQJ8T-sf_wXXlvzhkSbwlQsQ-IdIOWSIEwA3V8o-/pub?gid=0&single=true&output=csv";
 
 // --- STATE ---
 let myTrackers = JSON.parse(localStorage.getItem('myTrackers')) || [];
@@ -31,79 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTrackerCards(); 
     refreshAllData(); // Initial load
 
-    // Update everything every 30 seconds
+    // Update prediction times every 30 seconds
     setInterval(refreshAllData, 30000); 
 });
 
-async function refreshAllData() {
-    await checkRouteActivity(); // 1. Check spreadsheet for movement
-    updateAllPredictions();     // 2. Check API for arrival times
+function refreshAllData() {
+    updateAllPredictions(); // Only check the API now
 }
 
 // ==========================================
-// 1. ACTIVITY CHECKER (The "Ghost Trail" Reader)
-// ==========================================
-
-async function checkRouteActivity() {
-    try {
-        const res = await fetch(SHEET_URL);
-        const text = await res.text();
-        
-        // Parse CSV
-        const rows = text.split('\n').slice(1).map(row => {
-            const cols = row.split(',');
-            if (cols.length < 2) return null;
-            return {
-                timestamp: parseInt(cols[0]), 
-                routeId: cols[1] ? cols[1].trim() : '', 
-                vehicleId: cols[2]
-            };
-        }).filter(r => r !== null && !isNaN(r.timestamp));
-
-        // Update Trackers
-        myTrackers.forEach(tracker => {
-            const dot = document.querySelector(`#card-${tracker.id} .status-dot`);
-            const statusText = document.querySelector(`#card-${tracker.id} .status-text`);
-            
-            if (!dot || !statusText) return;
-
-            // --- THE FIX: USE NORMALIZED IDs ---
-            const relevantLogs = rows.filter(log => {
-                // Convert both the log ID and tracker ID to the "Standard" version
-                // e.g. Log "107R" becomes "R", Tracker "R" becomes "R" -> MATCH!
-                return getStandardRouteID(log.routeId) === getStandardRouteID(tracker.route);
-            });
-            // -----------------------------------
-
-            if (relevantLogs.length > 0) {
-                relevantLogs.sort((a, b) => b.timestamp - a.timestamp);
-                const lastLogTime = relevantLogs[0].timestamp;
-                const diffMs = Date.now() - lastLogTime;
-                const minutesAgo = Math.floor(diffMs / 60000);
-
-                if (minutesAgo <= 5) {
-                    dot.style.background = '#2e7d32'; // Green
-                    statusText.innerHTML = `Active (Log ${minutesAgo < 1 ? 'just now' : minutesAgo + 'm ago'})`;
-                    statusText.style.color = '#2e7d32';
-                } else {
-                    dot.style.background = '#d32f2f'; // Red
-                    statusText.innerHTML = `Stalled / No Signal (Last log ${minutesAgo}m ago)`;
-                    statusText.style.color = '#d32f2f';
-                }
-            } else {
-                dot.style.background = '#bdbdbd'; // Grey
-                statusText.innerHTML = `No Recent Data`;
-                statusText.style.color = '#999';
-            }
-        });
-
-    } catch (err) {
-        console.error("Error checking activity:", err);
-    }
-}
-
-// ==========================================
-// 2. UI & CARDS
+// 1. UI & CARDS
 // ==========================================
 
 function renderTrackerCards() {
@@ -120,6 +36,7 @@ function renderTrackerCards() {
         div.className = `tracker-card route-${tracker.route}`;
         div.id = `card-${tracker.id}`;
         
+        // REMOVED: The Status Indicator (Green/Red Dot) section
         div.innerHTML = `
             <button class="delete-btn" 
                 type="button"
@@ -136,40 +53,46 @@ function renderTrackerCards() {
             <div class="prediction-text">
                 Loading...
             </div>
-
-            <div class="status-indicator">
-                <span class="status-dot"></span>
-                <span class="status-text">Checking system...</span>
-            </div>
         `;
         container.appendChild(div);
     });
 }
 
 // ==========================================
-// 3. PREDICTION API (Next Arrival)
+// 2. PREDICTION API (Next Arrival)
 // ==========================================
 
 async function updateAllPredictions() {
+    // Define aliases for route matching
+    const ROUTE_ALIASES = {
+        'R': ['107R', 'R'],
+        'A': ['A', '37A']
+    };
+
     myTrackers.forEach(async (tracker) => {
         try {
+            // Note: This fetch assumes you have a backend/Vercel function at /api/predictions
             const res = await fetch(`/api/predictions?stopId=${tracker.stopId}`);
             const arrivals = await res.json();
             
             const cardText = document.querySelector(`#card-${tracker.id} .prediction-text`);
             if (!cardText) return;
 
-            // --- THE FIX: USE NORMALIZED IDs ---
+            // Filter to find buses/trains matching our route
             const relevantArrivals = arrivals.filter(a => {
-                // Convert both API bus ID and Tracker ID to standard format
-                // API sends "107R" -> becomes "R"
-                // Tracker has "R" -> becomes "R"
-                return getStandardRouteID(a.routeId) === getStandardRouteID(tracker.route);
+                const busID = a.routeId.toString();
+                const targetID = tracker.route;
+
+                if (busID === targetID) return true;
+                if (ROUTE_ALIASES[targetID] && ROUTE_ALIASES[targetID].includes(busID)) {
+                    return true;
+                }
+                return false;
             });
-            // -----------------------------------
 
             if (relevantArrivals.length > 0) {
                 const nextBus = relevantArrivals[0];
+                // Simple Color Logic: Red if <= 5 mins, Green if > 5 mins
                 const color = nextBus.minutes <= 5 ? '#d32f2f' : '#2e7d32';
                 
                 cardText.innerHTML = `
@@ -180,12 +103,15 @@ async function updateAllPredictions() {
             }
         } catch (err) {
             console.error("Error updating card", tracker.id, err);
+            // Optional: Show error state in card
+            const cardText = document.querySelector(`#card-${tracker.id} .prediction-text`);
+            if (cardText) cardText.innerHTML = "..."; 
         }
     });
 }
 
 // ==========================================
-// 4. MODAL LOGIC (Dropdowns & Add)
+// 3. MODAL LOGIC (Dropdowns & Add)
 // ==========================================
 
 function openModal() { document.getElementById('modal-overlay').classList.remove('hidden'); }
@@ -204,7 +130,6 @@ function populateDirections() {
 
     if (route && typeof RTD_STOPS !== 'undefined' && RTD_STOPS[route]) {
         const allStops = RTD_STOPS[route];
-        // Get unique directions
         const uniqueDirs = [...new Set(allStops.map(stop => stop.dir))];
 
         uniqueDirs.forEach(dir => {
@@ -249,7 +174,6 @@ function addTracker() {
         return;
     }
 
-    // Find the stop name
     let stopName = "Unknown Stop";
     const foundStop = RTD_STOPS[route].find(s => s.id === stopId);
     if (foundStop) {
@@ -270,7 +194,6 @@ function addTracker() {
 }
 
 function removeTracker(id) {
-    // Note: Some mobile browsers block 'confirm', but the button logic handles the tap event.
     if(confirm("Stop tracking this trip?")) {
         myTrackers = myTrackers.filter(t => t.id !== id);
         saveAndRender();
